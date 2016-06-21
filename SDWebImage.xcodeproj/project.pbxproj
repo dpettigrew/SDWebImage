@@ -868,6 +868,8 @@
 				TargetAttributes = {
 					4A2CADFE1AB4BB5300B6BC39 = {
 						CreatedOnToolsVersion = 6.3;
+						DevelopmentTeam = 2JP854HHCW;
+						DevelopmentTeamName = LifeCentrics;
 					};
 				};
 			};
