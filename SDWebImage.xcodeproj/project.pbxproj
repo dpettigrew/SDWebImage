@@ -1988,7 +1988,8 @@
 		53922D66148C55810056699D /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0800;
+				LastSwiftMigration = 0730;
+				LastUpgradeCheck = 0810;
 				ORGANIZATIONNAME = Dailymotion;
 				TargetAttributes = {
 					00733A4B1BC487C000A5A117 = {
@@ -1996,6 +1997,8 @@
 					};
 					4A2CADFE1AB4BB5300B6BC39 = {
 						CreatedOnToolsVersion = 6.3;
+						DevelopmentTeam = 2JP854HHCW;
+						DevelopmentTeamName = LifeCentrics;
 					};
 				};
 			};
