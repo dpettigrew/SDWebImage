@@ -7,8 +7,8 @@
  */
 
 #import "SDWebImageManager.h"
-#import <objc/message.h>
 #import "NSImage+WebCache.h"
+#import <objc/message.h>
 
 @interface SDWebImageCombinedOperation : NSObject <SDWebImageOperation>
 
@@ -109,7 +109,7 @@
     // Invoking this method without a completedBlock is pointless
     NSAssert(completedBlock != nil, @"If you mean to prefetch the image, use -[SDWebImagePrefetcher prefetchURLs] instead");
 
-    // Very common mistake is to send the URL using NSString object instead of NSURL. For some strange reason, XCode won't
+    // Very common mistake is to send the URL using NSString object instead of NSURL. For some strange reason, Xcode won't
     // throw any warning for this type mismatch. Here we failsafe this error by allowing URLs to be passed as NSString.
     if ([url isKindOfClass:NSString.class]) {
         url = [NSURL URLWithString:(NSString *)url];
@@ -186,7 +186,8 @@
                         && error.code != NSURLErrorInternationalRoamingOff
                         && error.code != NSURLErrorDataNotAllowed
                         && error.code != NSURLErrorCannotFindHost
-                        && error.code != NSURLErrorCannotConnectToHost) {
+                        && error.code != NSURLErrorCannotConnectToHost
+                        && error.code != NSURLErrorNetworkConnectionLost) {
                         @synchronized (self.failedURLs) {
                             [self.failedURLs addObject:url];
                         }
@@ -227,11 +228,14 @@
                     [self safelyRemoveOperationFromRunning:strongOperation];
                 }
             }];
-            operation.cancelBlock = ^{
-                [self.imageDownloader cancel:subOperationToken];
-                __strong __typeof(weakOperation) strongOperation = weakOperation;
-                [self safelyRemoveOperationFromRunning:strongOperation];
-            };
+            @synchronized(operation) {
+                // Need same lock to ensure cancelBlock called because cancel method can be called in different queue
+                operation.cancelBlock = ^{
+                    [self.imageDownloader cancel:subOperationToken];
+                    __strong __typeof(weakOperation) strongOperation = weakOperation;
+                    [self safelyRemoveOperationFromRunning:strongOperation];
+                };
+            }
         } else if (cachedImage) {
             __strong __typeof(weakOperation) strongOperation = weakOperation;
             [self callCompletionBlockForOperation:strongOperation completion:completedBlock image:cachedImage data:cachedData error:nil cacheType:cacheType finished:YES url:url];
@@ -318,18 +322,16 @@
 }
 
 - (void)cancel {
-    self.cancelled = YES;
-    if (self.cacheOperation) {
-        [self.cacheOperation cancel];
-        self.cacheOperation = nil;
-    }
-    if (self.cancelBlock) {
-        self.cancelBlock();
-        
-        // TODO: this is a temporary fix to #809.
-        // Until we can figure the exact cause of the crash, going with the ivar instead of the setter
-//        self.cancelBlock = nil;
-        _cancelBlock = nil;
+    @synchronized(self) {
+        self.cancelled = YES;
+        if (self.cacheOperation) {
+            [self.cacheOperation cancel];
+            self.cacheOperation = nil;
+        }
+        if (self.cancelBlock) {
+            self.cancelBlock();
+            self.cancelBlock = nil;
+        }
     }
 }
 
